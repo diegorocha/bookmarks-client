@@ -16,6 +16,14 @@ class BookmarkClient(object):
             endpoint += '/' + str(_id)
         return endpoint
 
+    def sign_in(self, name, email, password):
+        endpoint = self._get_url('users')
+        data = {'name': name, 'email': email, 'password': password, 'isAdmin': False}
+        r = post(endpoint, json=data)
+        if r.ok:
+            self.login(email, password)
+        return r.ok
+
     def login(self, user, password):
         endpoint = self._get_url('auth')
         data = {'email': user, 'password': password}

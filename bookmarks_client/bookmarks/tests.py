@@ -63,7 +63,7 @@ class MockAPIMixin(object):
             return 400, headers, ''
         return 400, headers, ''
 
-    def mock_api_login(self, request, uri, headers):
+    def mock_api_login_or_create_user(self, request, uri, headers):
         # Apenas retorna login com sucesso do usuário test@example.com com a senha 123456
         data = request.parsed_body
         try:
@@ -256,6 +256,31 @@ class BookmarkClientTest(MockAPIMixin, TestCase):
         httpretty.disable()
         httpretty.reset()
 
+    def test_sign_in(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.POST, self.url + '/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, self.url + '/auth/',
+                               body=self.mock_api_login_or_create_user)
+        self.assertTrue(self.bookmark_client.sign_in(name='Foo', email='test@example.com', password='123456'))
+        httpretty.disable()
+        httpretty.reset()
+
+    def test_sign_in_error(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+
+        httpretty.register_uri(httpretty.POST, self.url + '/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, self.url + '/auth/',
+                               body=self.mock_api_login_or_create_user)
+        # Mock responderá com erro
+        self.assertFalse(self.bookmark_client.sign_in(name='Example', email='another-user@example.com', password='12345678'))
+        httpretty.disable()
+        httpretty.reset()
+
 
 class LoginViewTest(MockAPIMixin, TestCase):
     def setUp(self):
@@ -267,7 +292,7 @@ class LoginViewTest(MockAPIMixin, TestCase):
         httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
         # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
         httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
-                               body=self.mock_api_login)
+                               body=self.mock_api_login_or_create_user)
         # Dados habilitados para sucesso no mock
         post_data = {"username": "test@example.com", "password": "123456"}
         response = self.client.post(self.url, post_data)
@@ -281,7 +306,7 @@ class LoginViewTest(MockAPIMixin, TestCase):
         httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
         # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
         httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
-                               body=self.mock_api_login)
+                               body=self.mock_api_login_or_create_user)
         # Dados habilitados para sucesso no mock
         post_data = {"username": "test@example.com", "password": "123456"}
         response = self.client.post(self.url, post_data)
@@ -295,7 +320,7 @@ class LoginViewTest(MockAPIMixin, TestCase):
         httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
         # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
         httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
-                               body=self.mock_api_login)
+                               body=self.mock_api_login_or_create_user)
         # Dados habilitados para sucesso no mock
         post_data = {"username": "another@example.com", "password": "12345678"}
         response = self.client.post(self.url, post_data)
@@ -317,7 +342,7 @@ class DashboardViewTest(MockAPIMixin, TestCase):
         httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
         # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
         httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
-                               body=self.mock_api_login)
+                               body=self.mock_api_login_or_create_user)
         # Dados habilitados para sucesso no mock
         post_data = {"username": "test@example.com", "password": "123456"}
         self.client.post(reverse('login'), post_data)
@@ -344,7 +369,7 @@ class DashboardViewTest(MockAPIMixin, TestCase):
         httpretty.enable()
         httpretty.allow_net_connect = True  # Precisa para a chamada a página funcionar
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
-                               body=self.mock_api_login)
+                               body=self.mock_api_login_or_create_user)
         response = self.client.get(self.url)
         httpretty.disable()
         httpretty.reset()
@@ -441,3 +466,78 @@ class DashboardViewTest(MockAPIMixin, TestCase):
         httpretty.disable()
         httpretty.reset()
         self.assertEquals(response.context_data['view'].error_message, 'Não foi possível completar a operação')
+
+
+class SignInViewTest(MockAPIMixin, TestCase):
+    def setUp(self):
+        self.url = reverse('sign-in')
+
+    @override_settings(URL_API='http://example.com')
+    def test_create_user_with_sucess(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.POST, 'http://example.com/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
+                               body=self.mock_api_login_or_create_user)
+        # Dados habilitados para sucesso no mock
+        post_data = {"name": "Fulano de Tal", "email": "test@example.com", "password": "123456", "confirm_password": "123456"}
+        response = self.client.post(self.url, post_data)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertRedirects(response, reverse('dashboard'))
+
+    @override_settings(URL_API='http://example.com')
+    def test_create_user_with_error(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
+        # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
+        httpretty.register_uri(httpretty.POST, 'http://example.com/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
+                               body=self.mock_api_login_or_create_user)
+        # Dados habilitados para sucesso no mock
+        post_data = {"name": "Fulano de Tal", "email": "another@example.com", "password": "12345678", "confirm_password": "12345678"}
+        response = self.client.post(self.url, post_data)
+        httpretty.disable()
+        httpretty.reset()
+        # Verifica se renderizou a página de login novamente
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.resolver_match.url_name, 'sign-in')
+        self.assertEquals(response.context_data['view'].error_message, 'Não foi possível completar a operação')
+
+    def test_create_user_password_does_not_match(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
+        # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
+        httpretty.register_uri(httpretty.POST, 'http://example.com/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
+                               body=self.mock_api_login_or_create_user)
+        # Dados habilitados para sucesso no mock
+        post_data = {"name": "Fulano de Tal", "email": "another@example.com", "password": "123456", "confirm_password": "12345678"}
+        response = self.client.post(self.url, post_data)
+        httpretty.disable()
+        httpretty.reset()
+        # Verifica se renderizou a página de login novamente
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.resolver_match.url_name, 'sign-in')
+        self.assertEquals(response.context_data['view'].error_message, 'Senhas não conferem')
+
+    def test_create_user_empty(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
+        # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
+        httpretty.register_uri(httpretty.POST, 'http://example.com/users/',
+                               body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
+                               body=self.mock_api_login_or_create_user)
+        # Dados habilitados para sucesso no mock
+        post_data = {}
+        response = self.client.post(self.url, post_data)
+        httpretty.disable()
+        httpretty.reset()
+        # Verifica se renderizou a página de login novamente
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.resolver_match.url_name, 'sign-in')
+        self.assertEquals(response.context_data['view'].error_message, 'Por favor preencha todos os campos')

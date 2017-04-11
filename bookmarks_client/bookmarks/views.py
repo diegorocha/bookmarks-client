@@ -77,3 +77,26 @@ class DashboardView(TemplateView):
             else:
                 self.error_message = 'Não foi possível completar a operação'
         return self.get(request, *args, **kwargs)
+
+
+class SignInView(TemplateView):
+    template_name = 'sign-in.html'
+
+    def post(self, request, *args, **kwargs):
+        client = BookmarkClient()
+        name = request.POST.get('name', '')
+        email = request.POST.get('email', '')
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        if name and email and password and confirm_password:
+            if password == confirm_password:
+                if client.sign_in(name, email, password):
+                    request.session['user'] = client.token
+                    return redirect('dashboard')
+                else:
+                    self.error_message = 'Não foi possível completar a operação'
+            else:
+                self.error_message = 'Senhas não conferem'
+        else:
+            self.error_message = 'Por favor preencha todos os campos'
+        return self.get(request, *args, **kwargs)
