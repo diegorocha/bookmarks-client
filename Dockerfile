@@ -34,6 +34,7 @@ RUN pip install supervisor-stdout
 RUN service nginx stop
 
 COPY . /opt/app
+RUN /opt/venv/bin/python /opt/app/manage.py migrate
 RUN /opt/venv/bin/python /opt/app/manage.py collectstatic --noinput
 CMD supervisord -c /etc/supervisord.conf -n
 
