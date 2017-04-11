@@ -38,6 +38,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
+coverage/
 .coverage.*
 .cache
 nosetests.xml
@@ -87,3 +88,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Pycharm
+.idea
+
+# SQlite
+*.sqlite3

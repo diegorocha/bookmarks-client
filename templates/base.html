@@ -1,0 +1,63 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="Diego Rocha">
+    {% block head %}
+    <title>Bookmarks</title>
+    {% endblock head %}
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    {% block custom_head %}
+    {% endblock custom_head %}
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{% url 'home' %}">Bookmarks</a></li>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% if user_info %}{{ user_info.name }}{% else %}Usuário{% endif %}<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  {% if user_info %}
+                  <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                  {% if user_info.isAdmin %}
+                      <li><a href="{% url 'all-users' %}">Todos Usuários</a></li>
+                      <li><a href="{% url 'all-bookmarks' %}">Todas as Bookmarks</a></li>
+                      <li><a href="{% url 'new-admin' %}">Novo Admin</a></li>
+                  {% endif %}
+                  <li><a href="{% url 'logout' %}">Sair</a></li>
+                  {% else %}
+                  <li><a href="{% url 'sign-in' %}">Cadastre-se</a></li>
+                  <li><a href="{% url 'login' %}">Login</a></li>
+                  {% endif %}
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+    </nav>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1 container">
+          {% block content %}
+          {% endblock %}
+        </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    {% block custom_js %}
+    {% endblock %}
+  </body>
+</html>

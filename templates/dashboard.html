@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% load l10n %}
+{% block content %}
+<div class="col-md-6 col-md-offset-3">
+    <h1 class="text-center">Dashboard</h1>
+
+    {% if view.user_message %}
+    <div class="alert alert-success" role="alert">
+        <strong>{{ view.user_message }}</strong>
+    </div>
+    {% endif %}
+
+    {% if view.error_message %}
+    <div class="alert alert-danger" role="alert">
+        <strong>{{ view.error_message }}</strong>
+    </div>
+    {% endif %}
+
+    {% for bookmark in bookmarks %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <button type="button" class="close btn-remove" aria-label="Close" data-id="{{ bookmark.id }}">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                <h3 class="panel-title">{{ bookmark.title }}</h3>
+            </div>
+            <div class="panel-body">
+                <div id="bookmark-content-{{ bookmark.id }}">
+                    <p>
+                        <span class="glyphicon glyphicon-pencil btn-edit" aria-hidden="true" data-id="{{ bookmark.id }}"></span>
+                        <a href="{{ bookmark.url }}">{{ bookmark.url }}</a>
+                    </p>
+                </div>
+                <div class="bookmark-form" id="bookmark-form-{{ bookmark.id }}">
+                    <form class="form-horizontal" id="bookmark-{{ bookmark.id }}" method="post">
+                        {% csrf_token %}
+                        <input type='hidden' name='__operation' id='__operation' value='' />
+                        <input type='hidden' name='__id' id='__id' value='' />
+                        <fieldset>
+                        <div class="form-group">
+                          <label class="col-md-4 control-label" for="txtTitulo">Título</label>
+                          <div class="col-md-5">
+                          <input id="txtTitulo" name="txtTitulo" placeholder="Título" class="form-control input-md" required="" type="text" value="{{ bookmark.title }}">
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-md-4 control-label" for="txtUrl">Link</label>
+                          <div class="col-md-5">
+                          <input id="txtUrl" name="txtUrl" placeholder="Link" class="form-control input-md" required="" type="text" value="{{ bookmark.url }}">
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <label class="col-md-4 control-label" for="button1id"></label>
+                          <div class="col-md-8">
+                            <button id="btnSalvar-{{ bookmark.id }}" name="btnSalvar-{{ bookmark.id }}" class="btn btn-success btn-save" data-id="{{ bookmark.id }}">Salvar</button>
+                            <button id="btnCancelar-{{ bookmark.id }}" name="btnCancelar-{{ bookmark.id }}" class="btn btn-danger btn-cancel" data-id="{{ bookmark.id }}">Cancelar</button>
+                          </div>
+                        </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+          </div>
+    {% endfor %}
+    <div class="panel panel-success">
+        <div class="panel-heading">
+            <h3 class="panel-title">Novo Bookmark</h3>
+        </div>
+        <div class="panel-body">
+            <form class="form-horizontal" id="novo" method="post">
+                {% csrf_token %}
+                <fieldset>
+                <div class="form-group">
+                  <label class="col-md-4 control-label" for="txtTitulo">Título</label>
+                  <div class="col-md-5">
+                  <input id="txtTitulo" name="txtTitulo" placeholder="Título" class="form-control input-md" required="" type="text">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-md-4 control-label" for="txtUrl">Link</label>
+                  <div class="col-md-5">
+                  <input id="txtUrl" name="txtUrl" placeholder="Link" class="form-control input-md" required="" type="text">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-md-4 control-label" for="btnOK"></label>
+                  <div class="col-md-4">
+                    <button id="btnOK" name="btnOK" class="btn btn-success">Salvar</button>
+                  </div>
+                </div>
+                </fieldset>
+            </form>
+        </div>
+      </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+    <script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}
