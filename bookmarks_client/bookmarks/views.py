@@ -18,16 +18,18 @@ class LoginView(TemplateView):
 
     def post(self, request, *args, **kwargs):
         client = BookmarkClient()
-        username = request.POST['username']
-        password = request.POST['password']
-        if client.login(username, password):
-            request.session['user'] = client.token
-            return redirect('dashboard')
+        username = request.POST.get('username', '')
+        password = request.POST.get('password', '')
+        if username and password:
+            if client.login(username, password):
+                request.session['user'] = client.token
+                return redirect('dashboard')
         return self.get(request, *args, **kwargs)
 
 
 class LogoutView(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
+        # Limpa o token do usuário da sessão. É isso que de fato efetua o logout
         self.request.session['user'] = ''
         return reverse('home')
 
@@ -50,15 +52,26 @@ class DashboardView(TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
+        self.user_message = ''
+        self.error_message = ''
         client = BookmarkClient(self.token)
         __operation = request.POST.get('__operation')
         _id = request.POST.get('__id')
-        titulo = request.POST['txtTitulo']
-        url = request.POST['txtUrl']
+        titulo = request.POST.get('txtTitulo')
+        url = request.POST.get('txtUrl')
         if __operation == '__remove__':
-            client.delete_bookmark(_id)
+            if client.delete_bookmark(_id):
+                self.user_message = 'Bookmark removido com sucesso'
+            else:
+                self.error_message = 'Não foi possível completar a operação'
         elif __operation == '__update__':
-            client.update_bookmark(_id, titulo, url)
+            if client.update_bookmark(_id, titulo, url):
+                self.user_message = 'Bookmark atualizado com sucesso'
+            else:
+                self.error_message = 'Não foi possível completar a operação'
         else:
-            client.new_bookmark(titulo, url)
+            if client.new_bookmark(titulo, url):
+                self.user_message = 'Bookmark criado com sucesso'
+            else:
+                self.error_message = 'Não foi possível completar a operação'
         return self.get(request, *args, **kwargs)

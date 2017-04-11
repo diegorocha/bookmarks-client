@@ -28,7 +28,10 @@ class BookmarkClient(object):
     def get_bookmarks(self):
         endpoint = self._get_url('bookmarks')
         r = get(endpoint, headers=self._get_headers())
-        return r.json()
+        try:
+            return r.json()
+        except:
+            return []
 
     def new_bookmark(self, title, url):
         endpoint = self._get_url('bookmarks')
