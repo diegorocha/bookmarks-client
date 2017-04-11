@@ -30,9 +30,9 @@ Também simplicifade do desenvolvimento adotei o sqlite (valor padrão quando ne
 
 ## Instalação
 
-Para executar o projeto basta clonar o repositório.
+Para executar o projeto localmente basta clonar o repositório.
 
-Instalar as depências do python com o pip (preferencialmente dentro de uma virtualenv).
+Instalar as dependências do python com o pip (preferencialmente dentro de uma virtualenv).
 
 ```shell
 pip install -r requirements.txt
@@ -52,3 +52,13 @@ make test
 
 Esse comando, além de chamar a suite de testes do Django, gera o relatório (em HTML) da cobertura de testes, e salva na pasta "coverage"
 
+## Docker
+
+Para executar o projeto dentro de um container docker:
+
+```shell
+docker build -t bookmarks-client .
+docker run -p 8000:80 -d bookmarks-client
+```
+
+O projeto estará disponível através de http://localhost:8000/ ou http://container-ip/
