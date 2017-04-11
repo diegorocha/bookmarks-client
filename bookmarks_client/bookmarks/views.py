@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.http.response import HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import RedirectView
@@ -16,6 +17,26 @@ class UserInfoMixin(object):
         client = BookmarkClient(token)
         context['user_info'] = client.get_user()
         return context
+
+
+class LoginRequiredMixin(object):
+    def dispatch(self, request, *args, **kwargs):
+        self.token = request.session.get('user', '')
+        if not self.token:
+            return redirect('login')
+        return super(LoginRequiredMixin, self).dispatch(request, *args, **kwargs)
+
+
+class AdminRequiredMixin(object):
+    def dispatch(self, request, *args, **kwargs):
+        self.token = request.session.get('user', '')
+        if not self.token:
+            return redirect('login')
+        client = BookmarkClient(self.token)
+        user = client.get_user()
+        if not user.get('isAdmin', False):
+            return HttpResponseForbidden()
+        return super(AdminRequiredMixin, self).dispatch(request, *args, **kwargs)
 
 
 class HomeView(UserInfoMixin, TemplateView):
@@ -45,20 +66,14 @@ class LogoutView(RedirectView):
         return reverse('home')
 
 
-class DashboardView(UserInfoMixin, TemplateView):
+class DashboardView(UserInfoMixin, LoginRequiredMixin, TemplateView):
     template_name = 'dashboard.html'
     token = ''
-
-    def dispatch(self, request, *args, **kwargs):
-        self.token = request.session.get('user', '')
-        if not self.token:
-            return redirect('login')
-        return super(DashboardView, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(DashboardView, self).get_context_data(**kwargs)
         client = BookmarkClient(self.token)
-        context['user_info'] = client.get_user()
+        user = client.get_user()
         context['bookmarks'] = client.get_bookmarks()
         return context
 
@@ -109,3 +124,16 @@ class SignInView(TemplateView):
         else:
             self.error_message = 'Por favor preencha todos os campos'
         return self.get(request, *args, **kwargs)
+
+
+class AllUsersView(UserInfoMixin, AdminRequiredMixin, TemplateView):
+    template_name = 'all-users.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(AllUsersView, self).get_context_data(**kwargs)
+        token = self.request.session.get('user', '')
+        client = BookmarkClient(token)
+        user = client.get_user()
+        if user.get('isAdmin', False):
+            context['all_users'] = client.get_all_users()
+        return context

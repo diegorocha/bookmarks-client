@@ -65,3 +65,11 @@ class BookmarkClient(object):
         endpoint = self._get_url('bookmarks', _id)
         r = delete(endpoint, headers=self._get_headers())
         return r.ok
+
+    def get_all_users(self):
+        endpoint = self._get_url('users/all')
+        r = get(endpoint, headers=self._get_headers())
+        try:
+            return r.json()
+        except:
+            return []
