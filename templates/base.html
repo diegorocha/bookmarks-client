@@ -29,13 +29,15 @@
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
               <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% if user.is_authenticated %}{{ user.get_username }}{% else %}Usuário{% endif %}<span class="caret"></span></a>
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{% if user_info %}{{ user_info.name }}{% else %}Usuário{% endif %}<span class="caret"></span></a>
                 <ul class="dropdown-menu">
-{#                  {% if user.is_authenticated %}#}
-{#                  <li><a href="{% url 'logout' %}">Sair</a></li>#}
-{#                  {% else %}#}
-{#                  <li><a href="{% url 'login' %}">Login</a></li>#}
-{#                  {% endif %}#}
+                  {% if user_info %}
+                  <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                  <li><a href="{% url 'logout' %}">Sair</a></li>
+                  {% else %}
+                  <li><a href="{% url 'sign-in' %}">Cadastre-se</a></li>
+                  <li><a href="{% url 'login' %}">Login</a></li>
+                  {% endif %}
                 </ul>
               </li>
             </ul>

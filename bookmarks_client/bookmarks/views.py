@@ -9,7 +9,16 @@ from django.views.generic import TemplateView
 from bookmarks_client.bookmarks.client import BookmarkClient
 
 
-class HomeView(TemplateView):
+class UserInfoMixin(object):
+    def get_context_data(self, **kwargs):
+        context = super(UserInfoMixin, self).get_context_data(**kwargs)
+        token = self.request.session.get('user', '')
+        client = BookmarkClient(token)
+        context['user_info'] = client.get_user()
+        return context
+
+
+class HomeView(UserInfoMixin, TemplateView):
     template_name = 'home.html'
 
 
@@ -36,7 +45,7 @@ class LogoutView(RedirectView):
         return reverse('home')
 
 
-class DashboardView(TemplateView):
+class DashboardView(UserInfoMixin, TemplateView):
     template_name = 'dashboard.html'
     token = ''
 
@@ -49,8 +58,8 @@ class DashboardView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(DashboardView, self).get_context_data(**kwargs)
         client = BookmarkClient(self.token)
-        bookmarks = client.get_bookmarks()
-        context['bookmarks'] = bookmarks
+        context['user_info'] = client.get_user()
+        context['bookmarks'] = client.get_bookmarks()
         return context
 
     def post(self, request, *args, **kwargs):

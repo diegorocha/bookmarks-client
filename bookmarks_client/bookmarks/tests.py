@@ -75,6 +75,16 @@ class MockAPIMixin(object):
             return 400, headers, ''
         return 400, headers, ''
 
+    def mock_api_get_user(self, request, uri, headers):
+        # Apenas retorna sucesso com o token "TOKEN_FAKE_GET_USER"
+        try:
+            if request.headers.dict['authorization'] == 'JWT TOKEN_FAKE_GET_USER':
+                headers['content-type'] = 'application/json'
+                return 200, headers, '{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}'
+        except:
+            return 400, headers, ''
+        return 400, headers, ''
+
 
 class HomeViewTest(TestCase):
     def setUp(self):
@@ -281,6 +291,33 @@ class BookmarkClientTest(MockAPIMixin, TestCase):
         httpretty.disable()
         httpretty.reset()
 
+    def test_user(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, self.url + '/user/',
+                               body=self.mock_api_get_user)
+        self.bookmark_client.token = 'TOKEN_FAKE_GET_USER'  # Token que o mock retorna sucesso
+        data = self.bookmark_client.get_user()
+        httpretty.disable()
+        httpretty.reset()
+        self.assertIn('id', data)
+        self.assertIn('name', data)
+        self.assertIn('email', data)
+        self.assertIn('isAdmin', data)
+
+    def test_user_invalid(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, self.url + '/user/',
+                               body=self.mock_api_get_user)
+        self.bookmark_client.token = 'ANOTHER_TOKEN'  # Token inválido
+        data = self.bookmark_client.get_user()
+        httpretty.disable()
+        httpretty.reset()
+        self.assertEquals(data, {})
+
 
 class LoginViewTest(MockAPIMixin, TestCase):
     def setUp(self):
@@ -340,9 +377,11 @@ class DashboardViewTest(MockAPIMixin, TestCase):
     def do_login(self):
         httpretty.enable()
         httpretty.allow_net_connect = True  # Precisa para a chamada a /login funcionar
-        # mock_api_content_create_bookmark irá retornar sucesso ou erro, dependendo dos parametros
+        # mock_api irá retornar sucesso ou erro, dependendo dos parametros
         httpretty.register_uri(httpretty.POST, 'http://example.com/auth/',
                                body=self.mock_api_login_or_create_user)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         # Dados habilitados para sucesso no mock
         post_data = {"username": "test@example.com", "password": "123456"}
         self.client.post(reverse('login'), post_data)
@@ -359,6 +398,24 @@ class DashboardViewTest(MockAPIMixin, TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.resolver_match.url_name, 'dashboard')
 
+    @override_settings(URL_API='http://example.com')
+    def test_dashboard_has_user_info(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
+                               body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
+        response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertEquals(response.status_code, 200)
+        self.assertIsNotNone(response.context_data['user_info'])
+        self.assertIsNotNone(response.context_data['user_info']['id'])
+        self.assertIsNotNone(response.context_data['user_info']['name'])
+        self.assertIsNotNone(response.context_data['user_info']['email'])
+        self.assertIsNotNone(response.context_data['user_info']['isAdmin'])
+
     def test_without_login(self):
         self.do_logout()
         response = self.client.get(self.url)
@@ -369,7 +426,9 @@ class DashboardViewTest(MockAPIMixin, TestCase):
         httpretty.enable()
         httpretty.allow_net_connect = True  # Precisa para a chamada a página funcionar
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
-                               body=self.mock_api_login_or_create_user)
+                               body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         response = self.client.get(self.url)
         httpretty.disable()
         httpretty.reset()
@@ -384,6 +443,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_create_or_update_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         post_data = {"txtTitulo": "Criado pelo dashboard", "txtUrl": "http://outra.url.com.br/"}
         response = self.client.post(self.url, post_data)
         httpretty.disable()
@@ -398,6 +459,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_create_or_update_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         post_data = {}
         response = self.client.post(self.url, post_data)
         httpretty.disable()
@@ -413,7 +476,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_create_or_update_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
-
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         post_data = {"__operation": "__update__", "__id": str(_id), "txtTitulo": "Alterado pelo dashboard", "txtUrl": "http://outra.url.com.br/"}
         response = self.client.post(self.url, post_data)
         httpretty.disable()
@@ -429,6 +493,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_create_or_update_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         post_data = {"__operation": "__update__", "__id": str(_id)}
         response = self.client.post(self.url, post_data)
         httpretty.disable()
@@ -444,6 +510,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_delete_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
 
         post_data = {"__operation": "__remove__", "__id": str(_id), "txtTitulo": "Alterado pelo dashboard",
                      "txtUrl": "http://outra.url.com.br/"}
@@ -461,6 +529,8 @@ class DashboardViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_content_delete_bookmark)
         httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/',
                                body=self.mock_api_content_get_bookmarks)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body='{"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": false}')
         post_data = {"__operation": "__remove__", "__id": str(_id)}
         response = self.client.post(self.url, post_data)
         httpretty.disable()
