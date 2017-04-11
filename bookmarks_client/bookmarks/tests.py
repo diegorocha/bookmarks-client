@@ -122,32 +122,60 @@ class MockAPIMixin(object):
         return 400, headers, ''
 
 
-class HomeViewTest(TestCase):
+class HomeViewTest(MockAPIMixin, TestCase):
     def setUp(self):
         self.url = reverse('home')
 
+    @override_settings(URL_API='http://example.com')
     def test_home_status(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
         response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
         self.assertEquals(response.status_code, 200)
 
+    @override_settings(URL_API='http://example.com')
     def test_home_template(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
         response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
         self.assertEquals(response.template_name, ['home.html'])
 
+    @override_settings(URL_API='http://example.com')
     def test_home_has_bootstrap(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
         response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
         html = response.content.decode('utf-8')
         self.assertIn('bootstrap.min.css', html)
         self.assertIn('bootstrap.min.js', html)
 
 
-class LogoutViewTest(TestCase):
+class LogoutViewTest(MockAPIMixin, TestCase):
     def setUp(self):
         self.url = reverse('logout')
 
+    @override_settings(URL_API='http://example.com')
     def test_redirect_to_home(self):
         expected_url = reverse('home')
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
         response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
         self.assertRedirects(response, expected_url)
 
     def test_clear_session(self):
@@ -819,3 +847,27 @@ class AllBookmarksViewTest(MockAPIMixin, TestCase):
         httpretty.disable()
         httpretty.reset()
         self.assertEquals(response.status_code, 403)
+
+
+class NewAdminViewTest(MockAPIMixin, TestCase):
+    def setUp(self):
+        self.url = reverse('new-admin')
+
+    @override_settings(URL_API='http://example.com')
+    def test_post(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
+        httpretty.register_uri(httpretty.POST, 'http://example.com/users/',
+                               body=self.mock_api_login_or_create_user)
+        # Salva o token mocado como token do usuário
+        s = self.client.session
+        s["user"] = 'TOKEN_FAKE_ADMIN_USER'
+        s.save()
+        post_data = {"name": "Fulano de Tal", "email": "test@example.com", "password": "123456",
+                     "confirm_password": "123456"}
+        response = self.client.post(self.url, post_data)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertRedirects(response, reverse('dashboard'))

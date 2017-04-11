@@ -36,6 +36,7 @@
                   {% if user_info.isAdmin %}
                       <li><a href="{% url 'all-users' %}">Todos Usuários</a></li>
                       <li><a href="{% url 'all-bookmarks' %}">Todas as Bookmarks</a></li>
+                      <li><a href="{% url 'new-admin' %}">Novo Admin</a></li>
                   {% endif %}
                   <li><a href="{% url 'logout' %}">Sair</a></li>
                   {% else %}

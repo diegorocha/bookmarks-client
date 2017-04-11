@@ -24,6 +24,12 @@ class BookmarkClient(object):
             self.login(email, password)
         return r.ok
 
+    def new_admin(self, name, email, password):
+        endpoint = self._get_url('users')
+        data = {'name': name, 'email': email, 'password': password, 'isAdmin': True}
+        r = post(endpoint, json=data)
+        return r.ok
+
     def login(self, user, password):
         endpoint = self._get_url('auth')
         data = {'email': user, 'password': password}

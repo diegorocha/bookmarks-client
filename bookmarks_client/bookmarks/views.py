@@ -105,17 +105,22 @@ class DashboardView(UserInfoMixin, LoginRequiredMixin, TemplateView):
 
 class SignInView(TemplateView):
     template_name = 'sign-in.html'
+    auto_login_new_user = True
+
+    def _perform_create(self, name, email, password):
+        return self.client.sign_in(name, email, password)
 
     def post(self, request, *args, **kwargs):
-        client = BookmarkClient()
+        self.client = BookmarkClient()
         name = request.POST.get('name', '')
         email = request.POST.get('email', '')
         password = request.POST.get('password', '')
         confirm_password = request.POST.get('confirm_password', '')
         if name and email and password and confirm_password:
             if password == confirm_password:
-                if client.sign_in(name, email, password):
-                    request.session['user'] = client.token
+                if self._perform_create(name, email, password):
+                    if self.auto_login_new_user:
+                        request.session['user'] = self.client.token
                     return redirect('dashboard')
                 else:
                     self.error_message = 'Não foi possível completar a operação'
@@ -125,6 +130,13 @@ class SignInView(TemplateView):
             self.error_message = 'Por favor preencha todos os campos'
         return self.get(request, *args, **kwargs)
 
+
+class NewAdminView(UserInfoMixin, AdminRequiredMixin, SignInView):
+    template_name = 'new-admin.html'
+    auto_login_new_user = False
+
+    def _perform_create(self, name, email, password):
+        return self.client.new_admin(name, email, password)
 
 class AllUsersView(UserInfoMixin, AdminRequiredMixin, TemplateView):
     template_name = 'all-users.html'

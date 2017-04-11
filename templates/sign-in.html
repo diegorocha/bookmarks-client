@@ -15,7 +15,9 @@
     <form class="form-horizontal" id="sign-in" method="POST">
         {% csrf_token %}
         <fieldset>
+            {% block form-name %}
             <legend>Cadastre-se</legend>
+            {% endblock %}
             <div class="form-group">
               <label class="col-md-4 control-label" for="name">Nome</label>
               <div class="col-md-5">
