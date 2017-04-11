@@ -24,6 +24,8 @@ class LoginView(TemplateView):
             if client.login(username, password):
                 request.session['user'] = client.token
                 return redirect('dashboard')
+            else:
+                self.error_message = 'E-mail ou senha incorretos'
         return self.get(request, *args, **kwargs)
 
 
