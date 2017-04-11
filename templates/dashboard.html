@@ -4,6 +4,19 @@
 {% block content %}
 <div class="col-md-6 col-md-offset-3">
     <h1 class="text-center">Dashboard</h1>
+
+    {% if view.user_message %}
+    <div class="alert alert-success" role="alert">
+        <strong>{{ view.user_message }}</strong>
+    </div>
+    {% endif %}
+
+    {% if view.error_message %}
+    <div class="alert alert-danger" role="alert">
+        <strong>{{ view.error_message }}</strong>
+    </div>
+    {% endif %}
+
     {% for bookmark in bookmarks %}
         <div class="panel panel-default">
             <div class="panel-heading">
