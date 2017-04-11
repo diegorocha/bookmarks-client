@@ -1,10 +1,10 @@
+from django.conf import settings
 from requests import get, post, put, delete
 
 
 class BookmarkClient(object):
-    base_url = 'http://localhost:5000'
-
     def __init__(self, token=''):
+        self.base_url = settings.URL_API
         self.token = token
 
     def _get_headers(self):

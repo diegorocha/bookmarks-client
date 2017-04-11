@@ -120,3 +120,5 @@ X_FRAME_OPTIONS = 'DENY'
 if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
+
+URL_API = config('URL_API', default='http://localhost:5000')
