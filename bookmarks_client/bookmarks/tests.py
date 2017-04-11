@@ -101,6 +101,26 @@ class MockAPIMixin(object):
             return 400, headers, ''
         return 400, headers, ''
 
+    def mock_api_get_all_bookmarks(self, request, uri, headers):
+        # Apenas retorna sucesso com o token "TOKEN_FAKE_ADMIN_USER"
+        try:
+            if request.headers.dict['authorization'] == 'JWT TOKEN_FAKE_ADMIN_USER':
+                headers['content-type'] = 'application/json'
+                user_data = {"id": 35, "name": "Mock User", "email": "user@provider.com", "isAdmin": True}
+                user_data['Bookmarks'] = [{
+                    "id": 3,
+                    "title": "Foo barz",
+                    "url": "http://foo.bar/",
+                    "created_at": "2017-04-09T07:34:01.019Z",
+                    "updated_at": "2017-04-09T07:34:01.019Z",
+                    "user_id": 35
+                  }]
+                all_users = [user_data] * randrange(2, 5)
+                return 200, headers, json.dumps(all_users)
+        except:
+            return 400, headers, ''
+        return 400, headers, ''
+
 
 class HomeViewTest(TestCase):
     def setUp(self):
@@ -353,6 +373,28 @@ class BookmarkClientTest(MockAPIMixin, TestCase):
                                body=self.mock_api_get_all_users)
         self.bookmark_client.token = 'TOKEN_FAKE_NOT_ADMIN'
         self.assertEquals(self.bookmark_client.get_all_users(), [])
+        httpretty.disable()
+        httpretty.reset()
+
+    def test_get_all_bookmarks(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, self.url + '/bookmarks/all/',
+                               body=self.mock_api_get_all_bookmarks)
+        self.bookmark_client.token = 'TOKEN_FAKE_ADMIN_USER'
+        self.assertNotEqual(self.bookmark_client.get_all_bookmarks(), [])
+        httpretty.disable()
+        httpretty.reset()
+
+    def test_get_all_bookmarks_error(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = False
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, self.url + '/bookmarks/all/',
+                               body=self.mock_api_get_all_bookmarks)
+        self.bookmark_client.token = 'TOKEN_FAKE_NOT_ADMIN'
+        self.assertEquals(self.bookmark_client.get_all_bookmarks(), [])
         httpretty.disable()
         httpretty.reset()
 
@@ -704,6 +746,70 @@ class AllUsersViewTest(MockAPIMixin, TestCase):
                                body=self.mock_api_get_user)
         httpretty.register_uri(httpretty.GET, 'http://example.com/users/all/',
                                body=self.mock_api_get_all_users)
+
+        # Salva o token mocado como token do usuário
+        s = self.client.session
+        s["user"] = 'TOKEN_FAKE_GET_USER'
+        s.save()
+        response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertEquals(response.status_code, 403)
+
+
+class AllBookmarksViewTest(MockAPIMixin, TestCase):
+    def setUp(self):
+        self.url = reverse('all-bookmarks')
+
+    @override_settings(URL_API='http://example.com')
+    def test_is_admin(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/all/',
+                               body=self.mock_api_get_all_bookmarks)
+
+        # Salva o token mocado como token do usuário
+        s = self.client.session
+        s["user"] = 'TOKEN_FAKE_ADMIN_USER'
+        s.save()
+        response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.template_name, ['all-bookmarks.html'])
+        self.assertNotEqual(response.context_data['all_bookmarks'], [])
+
+    @override_settings(URL_API='http://example.com')
+    def test_not_logged(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/all/',
+                               body=self.mock_api_get_all_bookmarks)
+
+        # Salva o token mocado como token do usuário
+        s = self.client.session
+        s["user"] = ''
+        s.save()
+        response = self.client.get(self.url)
+        httpretty.disable()
+        httpretty.reset()
+        self.assertRedirects(response, reverse('login'))
+
+    @override_settings(URL_API='http://example.com')
+    def test_not_admin(self):
+        httpretty.enable()
+        httpretty.allow_net_connect = True
+        # Mock responderá com sucesso
+        httpretty.register_uri(httpretty.GET, 'http://example.com/user/',
+                               body=self.mock_api_get_user)
+        httpretty.register_uri(httpretty.GET, 'http://example.com/bookmarks/all/',
+                               body=self.mock_api_get_all_bookmarks)
 
         # Salva o token mocado como token do usuário
         s = self.client.session

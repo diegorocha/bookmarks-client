@@ -73,3 +73,11 @@ class BookmarkClient(object):
             return r.json()
         except:
             return []
+
+    def get_all_bookmarks(self):
+        endpoint = self._get_url('bookmarks/all')
+        r = get(endpoint, headers=self._get_headers())
+        try:
+            return r.json()
+        except:
+            return []

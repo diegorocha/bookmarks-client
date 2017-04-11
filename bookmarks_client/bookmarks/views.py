@@ -137,3 +137,16 @@ class AllUsersView(UserInfoMixin, AdminRequiredMixin, TemplateView):
         if user.get('isAdmin', False):
             context['all_users'] = client.get_all_users()
         return context
+
+
+class AllBookmarksView(UserInfoMixin, AdminRequiredMixin, TemplateView):
+    template_name = 'all-bookmarks.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(AllBookmarksView, self).get_context_data(**kwargs)
+        token = self.request.session.get('user', '')
+        client = BookmarkClient(token)
+        user = client.get_user()
+        if user.get('isAdmin', False):
+            context['all_bookmarks'] = client.get_all_bookmarks()
+        return context

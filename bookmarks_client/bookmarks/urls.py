@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^logout$', views.LogoutView.as_view(), name='logout'),
     url(r'^dashboard$', views.DashboardView.as_view(), name='dashboard'),
     url(r'^dashboard/users$', views.AllUsersView.as_view(), name='all-users'),
+    url(r'^dashboard/bookmarks$', views.AllBookmarksView.as_view(), name='all-bookmarks'),
 ]
