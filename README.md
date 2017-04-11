@@ -62,3 +62,10 @@ docker run -p 8000:80 -d bookmarks-client
 ```
 
 O projeto estará disponível através de http://localhost:8000/ ou http://container-ip/
+
+Obs: O Dockerfile atual seta a configuração URL_API=http://172.17.0.1:5000, esse endereço deve ser alterado com o IP e PORTA correspondentes da API.
+
+[Dockefile](https://github.com/diegorocha/bookmarks-client/blob/master/Dockefile#L12) Linha 12
+```
+ENV URL_API=http://172.17.0.1:5000
+```

@@ -8,6 +8,9 @@ RUN ln -sf /bin/true /sbin/initctl
 # no tty
 ENV DEBIAN_FRONTEND noninteractive
 
+# Environment Variable to API_URL (host-ip port 5000)
+ENV URL_API=http://172.17.0.1:5000
+
 # get up to date
 RUN apt-get update --fix-missing
 
